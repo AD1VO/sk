@@ -21,8 +21,7 @@ test_sources = [
     "tests",
 ]
 
-requires = [
-    "pyDes",
+requires = [	
 ]
 test_requires = [
     "pytest",
