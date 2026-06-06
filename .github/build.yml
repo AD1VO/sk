@@ -1,0 +1,29 @@
+name: Build iOS IPA
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Установка Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Установка BeeWare
+        run: pip install briefcase
+      - name: Создание Xcode проекта
+        run: briefcase create iOS
+      - name: Компиляция для iOS
+        run: |
+          cd iOS/Xcode
+          xcodebuild build -project *.xcodeproj -scheme *-iOS -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      - name: Создание Payload и IPA
+        run: |
+          mkdir Payload
+          cp -r iOS/Xcode/build/Release-iphoneos/*.app Payload/
+          zip -r SKEdit_iOS.ipa Payload
+      - name: Выгрузка готового IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: SKEdit_App
+          path: SKEdit_iOS.ipa
