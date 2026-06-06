@@ -7,112 +7,186 @@ from toga.style.pack import COLUMN, ROW
 
 class SKEditApp(toga.App):
     def startup(self):
+        self.plist_data = {}
+        self.filepath = None
+        self.found_id = None
+
         self.tabs = toga.OptionContainer()
 
-        # ВКЛАДКА 1
-        tab1_box = toga.Box(style=Pack(direction=COLUMN, padding=10))
-        self.btn_full = toga.Button('Фулл аккаунт (в разработке)', style=Pack(padding_bottom=10))
-        tab1_box.add(self.btn_full)
-
-        # ВКЛАДКА 2 (РЕДАКТОР)
-        tab2_box = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        # --- ТАБ 1: ГЛАВНАЯ (ПЛИСТ И САМОЦВЕТЫ) ---
+        tab_main = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        self.lbl_status = toga.Label('Файл не выбран', style=Pack(padding_bottom=10))
+        self.btn_load = toga.Button('1. Выбрать .plist файл', on_press=self.load_plist, style=Pack(padding_bottom=20))
         
-        # Строка с полем для ID
-        plist_box = toga.Box(style=Pack(direction=ROW, padding_bottom=10))
-        self.btn_plist = toga.Button('1. Выбрать .plist (Авто-Разблокировка)', on_press=self.parse_plist, style=Pack(padding_right=10))
-        self.id_input = toga.TextInput(placeholder='Сюда скрипт вставит ID сам', style=Pack(flex=1))
-        plist_box.add(self.btn_plist)
-        plist_box.add(self.id_input)
-
-        # Строка с вводом самоцветов
-        self.gems_input = toga.TextInput(placeholder='Введите кол-во самоцветов (например: 99999)', style=Pack(padding_bottom=10))
-
-        # Строка с заготовкой
-        self.new_input = toga.TextInput(placeholder='2. Вставьте новую заготовку для DATA', style=Pack(padding_bottom=10))
-        self.btn_data = toga.Button('3. Обработать .data файлы (временно отключено)', on_press=self.process_data, style=Pack(padding_bottom=10))
+        self.lbl_gems = toga.Label('Текущие самоцветы: -', style=Pack(padding_bottom=5))
+        self.input_gems = toga.TextInput(placeholder='Введите новое количество', style=Pack(padding_bottom=10))
+        self.btn_save_gems = toga.Button('Сохранить самоцветы', on_press=self.save_gems, style=Pack(padding_bottom=10))
         
-        self.log = toga.MultilineTextInput(readonly=True, style=Pack(flex=1))
-        self.log.value = "Готово!\n1. Введите желаемое количество самоцветов.\n2. Нажмите «Выбрать .plist» — скрипт сам найдет ID, накрутит гемы и разблокирует всё остальное."
+        tab_main.add(self.lbl_status)
+        tab_main.add(self.btn_load)
+        tab_main.add(self.lbl_gems)
+        tab_main.add(self.input_gems)
+        tab_main.add(self.btn_save_gems)
+
+        # --- ТАБ 2: ПЕРСОНАЖИ ---
+        tab_chars = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        tab_chars.add(toga.Label('Разблокировка персонажей:', style=Pack(padding_bottom=10)))
+        self.input_char_id = toga.TextInput(placeholder='Номер персонажа (например: 0)', style=Pack(padding_bottom=10))
+        self.btn_unlock_char = toga.Button('Разблокировать одного', on_press=self.unlock_one_char, style=Pack(padding_bottom=20))
+        self.btn_unlock_all_chars = toga.Button('Разблокировать ВСЕХ персонажей', on_press=self.unlock_all_chars, style=Pack(padding_bottom=10))
         
-        tab2_box.add(self.gems_input)
-        tab2_box.add(plist_box)
-        tab2_box.add(self.new_input)
-        tab2_box.add(self.btn_data)
-        tab2_box.add(self.log)
+        tab_chars.add(self.input_char_id)
+        tab_chars.add(self.btn_unlock_char)
+        tab_chars.add(self.btn_unlock_all_chars)
 
-        self.tabs.content.append('Готовые аккаунты', tab1_box)
-        self.tabs.content.append('Редактор', tab2_box)
+        # --- ТАБ 3: СКИНЫ ---
+        tab_skins = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        tab_skins.add(toga.Label('Разблокировка скинов:', style=Pack(padding_bottom=10)))
+        self.input_skin_char = toga.TextInput(placeholder='Номер персонажа (например: 0)', style=Pack(padding_bottom=5))
+        self.input_skin_id = toga.TextInput(placeholder='Номер скина (например: 2)', style=Pack(padding_bottom=10))
+        self.btn_unlock_skin = toga.Button('Разблокировать один скин', on_press=self.unlock_one_skin, style=Pack(padding_bottom=20))
+        self.btn_unlock_all_skins = toga.Button('Разблокировать ВСЕ скины', on_press=self.unlock_all_skins, style=Pack(padding_bottom=10))
+        
+        tab_skins.add(self.input_skin_char)
+        tab_skins.add(self.input_skin_id)
+        tab_skins.add(self.btn_unlock_skin)
+        tab_skins.add(self.btn_unlock_all_skins)
 
-        self.main_window = toga.MainWindow(title="SKEdit Mod Tool")
+        # --- ТАБ 4: НАВЫКИ ---
+        tab_skills = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        tab_skills.add(toga.Label('Разблокировка навыков:', style=Pack(padding_bottom=10)))
+        self.input_skill_id = toga.TextInput(placeholder='Номер навыка (например: 1)', style=Pack(padding_bottom=10))
+        self.btn_unlock_skill = toga.Button('Разблокировать один навык', on_press=self.unlock_one_skill, style=Pack(padding_bottom=20))
+        self.btn_unlock_all_skills = toga.Button('Разблокировать ВСЕ навыки', on_press=self.unlock_all_skills, style=Pack(padding_bottom=10))
+        
+        tab_skills.add(self.input_skill_id)
+        tab_skills.add(self.btn_unlock_skill)
+        tab_skills.add(self.btn_unlock_all_skills)
+
+        # --- ТАБ 5: АККАУНТЫ ---
+        tab_accounts = toga.Box(style=Pack(direction=COLUMN, padding=10))
+        tab_accounts.add(toga.Label('Здесь будут готовые аккаунты', style=Pack(padding_bottom=10)))
+        tab_accounts.add(toga.Button('Загрузить фулл аккаунт (в разработке)', style=Pack(padding_bottom=10)))
+
+        # Добавляем табы в нижнее меню в нужном порядке
+        self.tabs.content.append('Главная', tab_main)
+        self.tabs.content.append('Персы', tab_chars)
+        self.tabs.content.append('Скины', tab_skins)
+        self.tabs.content.append('Навыки', tab_skills)
+        self.tabs.content.append('Аккаунты', tab_accounts)
+
+        self.main_window = toga.MainWindow(title="SKEdit Mod")
         self.main_window.content = self.tabs
         self.main_window.show()
 
-    async def parse_plist(self, widget):
+    async def load_plist(self, widget):
         start_dir = "C:\\" if os.name == 'nt' else "/var/mobile/Containers/Data/Application/"
         try:
-            filepath = await self.main_window.dialog(toga.OpenFileDialog("Выберите файл .plist", initial_directory=start_dir))
+            filepath = await self.main_window.dialog(toga.OpenFileDialog("Выберите .plist", initial_directory=start_dir))
             if filepath:
-                with open(filepath, 'rb') as f: 
-                    plist_data = plistlib.load(f)
+                self.filepath = filepath
+                with open(filepath, 'rb') as f:
+                    self.plist_data = plistlib.load(f)
                 
                 # Поиск ID
-                found_id = None
-                for k in plist_data.keys():
+                self.found_id = None
+                for k in self.plist_data.keys():
                     m1 = re.match(r'^(\d{6,})_', k)
-                    if m1: found_id = m1.group(1); break
+                    if m1: self.found_id = m1.group(1); break
                     m2 = re.match(r'^OpenRijTest_(\d{6,})', k, re.IGNORECASE)
-                    if m2: found_id = m2.group(1); break
-                
-                if found_id:
-                    self.id_input.value = str(found_id)
-                    log_msg = f"[+] Найден ID: {found_id}\n"
+                    if m2: self.found_id = m2.group(1); break
+
+                if self.found_id:
+                    # Сразу выключаем защиту
+                    target_key_lower = f"openrijtest_{self.found_id}".lower()
+                    for k in list(self.plist_data.keys()):
+                        if k.lower() == target_key_lower:
+                            self.plist_data[k] = 0
+
+                    # Ищем текущие гемы
+                    current_gems = 0
+                    for k in self.plist_data.keys():
+                        if str(self.found_id) in k and 'gem' in k.lower():
+                            current_gems = self.plist_data[k]
+                            break
                     
-                    # 1. Отключаем OpenRijTest
-                    target_key_lower = f"openrijtest_{found_id}".lower()
-                    for k in list(plist_data.keys()):
-                        if k.lower() == target_key_lower and plist_data[k] == 1:
-                            plist_data[k] = 0
-                            log_msg += f"[+] Защита {k} отключена!\n"
-                            
-                    # 2. НАКРУТКА САМОЦВЕТОВ
-                    # Проверяем, ввел ли пользователь число
-                    gems_value = self.gems_input.value.strip()
-                    if gems_value.isdigit():
-                        gems_count = int(gems_value)
-                        # Ищем все ключи, содержащие ID и слово 'gem' (например: 128924619_gem или 128924619_last_gems)
-                        for k in list(plist_data.keys()):
-                            if str(found_id) in k and 'gem' in k.lower():
-                                plist_data[k] = gems_count
-                                log_msg += f"[+] Значение {k} установлено на {gems_count}!\n"
-                    else:
-                        log_msg += "[!] Количество самоцветов не введено или введено неверно. Пропущено.\n"
-
-                    # 3. АВТО-РАЗБЛОКИРОВКА ПЕРСОНАЖЕЙ И НАВЫКОВ
-                    for c in range(35):
-                        plist_data[f"{found_id}_c{c}_unlock"] = 1
-                        for s in range(45):
-                            plist_data[f"{found_id}_c{c}_skin{s}"] = 1
-                            
-                    for s in range(30):
-                        plist_data[f"{found_id}_skill_{s}"] = 1
-                    for p in range(65):
-                        plist_data[f"{found_id}_pet{p}_unlock"] = 1
-                        
-                    log_msg += "[+] Персонажи, скины, питомцы и навыки успешно разблокированы!\n"
-
-                    # Сохраняем обновленный файл
-                    with open(filepath, 'wb') as f: 
-                        plistlib.dump(plist_data, f)
-                    log_msg += "[+] Файл .plist успешно перезаписан!"
-                        
-                    self.log.value = log_msg
+                    self.lbl_status.text = f"ID загружен: {self.found_id}"
+                    self.lbl_gems.text = f"Текущие самоцветы: {current_gems}"
+                    self.save_file()
+                    await self.main_window.dialog(toga.InfoDialog('Успех', f'Файл загружен!\nВаш ID: {self.found_id}\nСамоцветов: {current_gems}'))
                 else:
-                    self.log.value = "[-] Не удалось найти ID в файле .plist"
-        except ValueError: 
-            pass
+                    await self.main_window.dialog(toga.InfoDialog('Ошибка', 'ID не найден в файле.'))
+        except Exception as e:
+            print(e)
 
-    async def process_data(self, widget):
-        self.log.value = "Шифрование .data в iOS-версии временно отключено."
+    def save_file(self):
+        if self.filepath and self.plist_data:
+            with open(self.filepath, 'wb') as f:
+                plistlib.dump(self.plist_data, f)
+
+    async def save_gems(self, widget):
+        if not self.found_id: return await self.show_error()
+        val = self.input_gems.value.strip()
+        if val.isdigit():
+            val_int = int(val)
+            for k in list(self.plist_data.keys()):
+                if str(self.found_id) in k and 'gem' in k.lower():
+                    self.plist_data[k] = val_int
+            self.lbl_gems.text = f"Текущие самоцветы: {val_int}"
+            self.save_file()
+            await self.main_window.dialog(toga.InfoDialog('Успех', f'Самоцветы изменены на {val_int}!'))
+        else:
+            await self.main_window.dialog(toga.InfoDialog('Ошибка', 'Введите число'))
+
+    async def unlock_one_char(self, widget):
+        if not self.found_id: return await self.show_error()
+        val = self.input_char_id.value.strip()
+        if val.isdigit():
+            self.plist_data[f"{self.found_id}_c{val}_unlock"] = 1
+            self.save_file()
+            await self.main_window.dialog(toga.InfoDialog('Успех', f'Персонаж {val} разблокирован!'))
+
+    async def unlock_all_chars(self, widget):
+        if not self.found_id: return await self.show_error()
+        for c in range(35):
+            self.plist_data[f"{self.found_id}_c{c}_unlock"] = 1
+        self.save_file()
+        await self.main_window.dialog(toga.InfoDialog('Успех', 'Все персонажи разблокированы!'))
+
+    async def unlock_one_skin(self, widget):
+        if not self.found_id: return await self.show_error()
+        c = self.input_skin_char.value.strip()
+        s = self.input_skin_id.value.strip()
+        if c.isdigit() and s.isdigit():
+            self.plist_data[f"{self.found_id}_c{c}_skin{s}"] = 1
+            self.save_file()
+            await self.main_window.dialog(toga.InfoDialog('Успех', f'Скин {s} для персонажа {c} разблокирован!'))
+
+    async def unlock_all_skins(self, widget):
+        if not self.found_id: return await self.show_error()
+        for c in range(35):
+            for s in range(45):
+                self.plist_data[f"{self.found_id}_c{c}_skin{s}"] = 1
+        self.save_file()
+        await self.main_window.dialog(toga.InfoDialog('Успех', 'Все скины разблокированы!'))
+
+    async def unlock_one_skill(self, widget):
+        if not self.found_id: return await self.show_error()
+        val = self.input_skill_id.value.strip()
+        if val.isdigit():
+            self.plist_data[f"{self.found_id}_skill_{val}"] = 1
+            self.save_file()
+            await self.main_window.dialog(toga.InfoDialog('Успех', f'Навык {val} разблокирован!'))
+
+    async def unlock_all_skills(self, widget):
+        if not self.found_id: return await self.show_error()
+        for s in range(30):
+            self.plist_data[f"{self.found_id}_skill_{s}"] = 1
+        self.save_file()
+        await self.main_window.dialog(toga.InfoDialog('Успех', 'Все навыки разблокированы!'))
+
+    async def show_error(self):
+        await self.main_window.dialog(toga.InfoDialog('Ошибка', 'Сначала выберите файл .plist на вкладке "Главная"'))
 
 def main():
     return SKEditApp('SKEdit', 'com.diablo.funpay')
