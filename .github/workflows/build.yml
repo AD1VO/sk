@@ -20,12 +20,12 @@ jobs:
       - name: Компиляция для iOS
         run: |
           cd build/*/ios/xcode
-          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES
+          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphonesimulator -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           
       - name: Создание Payload и IPA
         run: |
           mkdir Payload
-          cp -r build/*/ios/xcode/build/Release-iphoneos/*.app Payload/
+          cp -r build/*/ios/xcode/build/Release-iphonesimulator/*.app Payload/
           zip -r SKEdit_iOS.ipa Payload
           
       - name: Выгрузка готового IPA
