@@ -17,19 +17,10 @@ jobs:
       - name: Создание Xcode проекта
         run: briefcase create iOS
         
-      - name: Обман скрипта подписи и Компиляция
+      - name: Компиляция для iOS
         run: |
           cd build/*/ios/xcode
-          
-          # Подменяем системную команду codesign на "пустышку", чтобы скрипты не выдавали ошибку
-          mkdir -p /tmp/fake_bin
-          echo '#!/bin/bash' > /tmp/fake_bin/codesign
-          echo 'exit 0' >> /tmp/fake_bin/codesign
-          chmod +x /tmp/fake_bin/codesign
-          export PATH="/tmp/fake_bin:$PATH"
-          
-          # Собираем под реальное устройство без подписи
-          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO EXPANDED_CODE_SIGN_IDENTITY="-"
           
       - name: Создание Payload и IPA
         run: |
