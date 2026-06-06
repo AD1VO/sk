@@ -20,7 +20,7 @@ jobs:
       - name: Компиляция для iOS
         run: |
           cd build/*/ios/xcode
-          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO EXPANDED_CODE_SIGN_IDENTITY="-"
+          xcodebuild build -project *.xcodeproj -scheme SKEdit -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO EXPANDED_CODE_SIGN_IDENTITY="-" CONFIGURATION_BUILD_DIR=build/Release-iphoneos
           
       - name: Создание Payload и IPA
         run: |
