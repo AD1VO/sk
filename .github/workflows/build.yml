@@ -23,7 +23,7 @@ jobs:
           cp -r iOS/Xcode/build/Release-iphoneos/*.app Payload/
           zip -r SKEdit_iOS.ipa Payload
       - name: Выгрузка готового IPA
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SKEdit_App
           path: SKEdit_iOS.ipa
